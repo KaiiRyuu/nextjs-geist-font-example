@@ -41,12 +41,18 @@ const dummyDiscussions = [
   }
 ];
 
+// Make data available globally for routes
+global.db = null;
+global.dummyStudents = dummyStudents;
+global.dummyDiscussions = dummyDiscussions;
+
 // Connect to MongoDB (with fallback to dummy data)
 async function connectToDatabase() {
   try {
     const client = new MongoClient(MONGODB_URI);
     await client.connect();
     db = client.db('kipkuliah');
+    global.db = db;
     console.log('Connected to MongoDB');
     
     // Initialize collections with dummy data if empty
@@ -66,7 +72,7 @@ async function connectToDatabase() {
     }
   } catch (error) {
     console.log('MongoDB connection failed, using dummy data:', error.message);
-    db = null;
+    global.db = null;
   }
 }
 
@@ -96,6 +102,3 @@ connectToDatabase().then(() => {
     console.log(`Server is running on port ${PORT}`);
   });
 });
-
-// Export for use in routes
-module.exports = { app, db, dummyStudents, dummyDiscussions };
