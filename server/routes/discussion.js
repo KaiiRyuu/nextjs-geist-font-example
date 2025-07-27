@@ -1,25 +1,24 @@
 const express = require('express');
 const router = express.Router();
-const { db, dummyDiscussions } = require('../index');
 
 // GET /api/discussion - Get all discussion posts
 router.get('/', async (req, res) => {
   try {
     let discussions = [];
     
-    if (db) {
+    if (global.db) {
       try {
-        const discussionsCollection = db.collection('discussions');
+        const discussionsCollection = global.db.collection('discussions');
         discussions = await discussionsCollection
           .find({})
           .sort({ createdAt: -1 })
           .toArray();
       } catch (dbError) {
         console.error('Database query error:', dbError);
-        discussions = [...dummyDiscussions].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        discussions = [...global.dummyDiscussions].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       }
     } else {
-      discussions = [...dummyDiscussions].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      discussions = [...global.dummyDiscussions].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     }
     
     res.json({
@@ -61,19 +60,19 @@ router.post('/', async (req, res) => {
     };
     
     // Save to database or dummy data
-    if (db) {
+    if (global.db) {
       try {
-        const discussionsCollection = db.collection('discussions');
+        const discussionsCollection = global.db.collection('discussions');
         const result = await discussionsCollection.insertOne(newDiscussion);
         newDiscussion._id = result.insertedId;
       } catch (dbError) {
         console.error('Database insert error:', dbError);
         // Fall back to dummy data
-        dummyDiscussions.unshift(newDiscussion);
+        global.dummyDiscussions.unshift(newDiscussion);
       }
     } else {
       // Add to dummy data
-      dummyDiscussions.unshift(newDiscussion);
+      global.dummyDiscussions.unshift(newDiscussion);
     }
     
     res.status(201).json({
@@ -106,9 +105,9 @@ router.put('/:id/answer', async (req, res) => {
     
     let updated = false;
     
-    if (db) {
+    if (global.db) {
       try {
-        const discussionsCollection = db.collection('discussions');
+        const discussionsCollection = global.db.collection('discussions');
         const result = await discussionsCollection.updateOne(
           { id: parseInt(id) },
           { $set: { answer: answer.trim(), answeredAt: new Date() } }
@@ -117,19 +116,19 @@ router.put('/:id/answer', async (req, res) => {
       } catch (dbError) {
         console.error('Database update error:', dbError);
         // Fall back to dummy data
-        const discussionIndex = dummyDiscussions.findIndex(d => d.id === parseInt(id));
+        const discussionIndex = global.dummyDiscussions.findIndex(d => d.id === parseInt(id));
         if (discussionIndex !== -1) {
-          dummyDiscussions[discussionIndex].answer = answer.trim();
-          dummyDiscussions[discussionIndex].answeredAt = new Date();
+          global.dummyDiscussions[discussionIndex].answer = answer.trim();
+          global.dummyDiscussions[discussionIndex].answeredAt = new Date();
           updated = true;
         }
       }
     } else {
       // Update dummy data
-      const discussionIndex = dummyDiscussions.findIndex(d => d.id === parseInt(id));
+      const discussionIndex = global.dummyDiscussions.findIndex(d => d.id === parseInt(id));
       if (discussionIndex !== -1) {
-        dummyDiscussions[discussionIndex].answer = answer.trim();
-        dummyDiscussions[discussionIndex].answeredAt = new Date();
+        global.dummyDiscussions[discussionIndex].answer = answer.trim();
+        global.dummyDiscussions[discussionIndex].answeredAt = new Date();
         updated = true;
       }
     }
@@ -161,25 +160,25 @@ router.delete('/:id', async (req, res) => {
     const { id } = req.params;
     let deleted = false;
     
-    if (db) {
+    if (global.db) {
       try {
-        const discussionsCollection = db.collection('discussions');
+        const discussionsCollection = global.db.collection('discussions');
         const result = await discussionsCollection.deleteOne({ id: parseInt(id) });
         deleted = result.deletedCount > 0;
       } catch (dbError) {
         console.error('Database delete error:', dbError);
         // Fall back to dummy data
-        const discussionIndex = dummyDiscussions.findIndex(d => d.id === parseInt(id));
+        const discussionIndex = global.dummyDiscussions.findIndex(d => d.id === parseInt(id));
         if (discussionIndex !== -1) {
-          dummyDiscussions.splice(discussionIndex, 1);
+          global.dummyDiscussions.splice(discussionIndex, 1);
           deleted = true;
         }
       }
     } else {
       // Delete from dummy data
-      const discussionIndex = dummyDiscussions.findIndex(d => d.id === parseInt(id));
+      const discussionIndex = global.dummyDiscussions.findIndex(d => d.id === parseInt(id));
       if (discussionIndex !== -1) {
-        dummyDiscussions.splice(discussionIndex, 1);
+        global.dummyDiscussions.splice(discussionIndex, 1);
         deleted = true;
       }
     }
